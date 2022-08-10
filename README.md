@@ -123,7 +123,7 @@
    }
    ```
 
-6. Upload this did.json to your domain (e.g. `https://your_domain.com/.well-known/did.json`).
+6. Upload this did.json to your domain (e.g. `https://your_domain.com/.well-known/did.json`). You can also set an automatic upload by setting FTP properties in `.env` file. 
 
 7. After uploading the did.json(important) re-run the script and finally, the compliance service compliance service is used to sign the locally signed self description. It signs it if the final result is successfully verified against the compliance service. The result is stored in a new file called `{timestamp}_complete_{gx-type}.json`
 

@@ -5,6 +5,7 @@ const axios = require('axios')
 const crypto = require('crypto')
 const fs = require('fs').promises
 const jose = require('jose')
+const Client = require('ssh2-sftp-client')
 
 const SD_PATH = process.argv.slice(2)[0] || CONF + 'self-description.json'
 const selfDescription = require(SD_PATH)
@@ -18,6 +19,15 @@ const TYPE_API_ATH = {
   'ServiceOfferingExperimental': 'service-offering',
   'LegalPerson': 'participant'
 }
+
+const ftpConfig = {
+  host: process.env.FTP_SERVER,
+  port: process.env.FTP_PORT,
+  username: process.env.FTP_USER,
+  password: process.env.FTP_ADMIN
+};
+const ftpDir = process.env.FTP_DIR
+const ftpEnabled = (process.env.FTP_ENABLED == 'true')
 
 function getApiVersionedUrl() {
   return `${BASE_URL}/api/v${process.env.API_VERSION || '2204'}`
@@ -115,6 +125,29 @@ async function createDIDFile() {
   return filename
 }
 
+async function uploadDidFile(filenameDid)
+{
+  let sftp = new Client()
+
+  await sftp.connect(ftpConfig)
+      .then(() =>
+      {
+        return sftp.fastPut(filenameDid, ftpDir)
+      })
+      .then((data) =>
+      {
+        console.log(data, '\n')
+      })
+      .finally(() =>
+      {
+        sftp.end()
+      })
+      .catch(err =>
+      {
+        console.error(err.message)
+      });
+}
+
 function logger(...msg) {
   console.log(msg.join(' '))
 }
@@ -163,6 +196,13 @@ async function main() {
 
     const filenameDid = await createDIDFile()
     logger(`📁 ${filenameDid} saved`, '\n')
+
+    // Upload did file to server
+    if (ftpEnabled)
+    {
+      logger(`📁 Uploading did file to server...`)
+      await uploadDidFile(filenameDid)
+    }
 
     // the following code only works if you hosted your created did.json
     logger('🔍 Checking Self Description with the Compliance Service...')
